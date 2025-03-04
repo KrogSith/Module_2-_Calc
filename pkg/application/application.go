@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 var id int = 0
@@ -79,10 +80,11 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	result, err := calculation.Calc(request.Expression)
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
+	} else {
+		w.WriteHeader(http.StatusCreated)
 	}
 	fmt.Fprintln(w, "{")
 	if err != nil {
@@ -96,17 +98,17 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "    \"id\": %v", id)
 		id += 1
 	}
-	fmt.Fprintln(w, "\n{")
+	fmt.Fprintln(w, "\n}")
 }
 
 func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
-	request := new(Request)
-	defer r.Body.Close()
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// request := new(Request)
+	// defer r.Body.Close()
+	// err := json.NewDecoder(r.Body).Decode(&request)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 
 	fmt.Fprintln(w, "{")
 	fmt.Fprintf(w, "    \"expressions\": [\n")
@@ -121,7 +123,7 @@ func ExpressionsHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "}")
 }
 
-func ExpressionHandler(w http.ResponseWriter, r *http.Request) {
+func IDHandler(w http.ResponseWriter, r *http.Request) {
 	request := new(Request)
 	defer r.Body.Close()
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -129,6 +131,16 @@ func ExpressionHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	for i := 0; i < len(expressions); i++ {
+		if i == len(expressions)-1 && request.ID != expressions[i].id {
+			w.WriteHeader(http.StatusNotFound)
+			break
+		}
+	}
+	if len(expressions) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+	}
+
 	fmt.Fprintln(w, "{")
 	fmt.Fprintf(w, "    \"expression\":\n")
 	fmt.Fprintf(w, "        {\n")
@@ -155,6 +167,11 @@ func ExpressionHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "}")
 }
 
+var TIME_ADDITION_MS int = 10
+var TIME_SUBTRACTION_MS int = 10
+var TIME_MULTIPLICATIONS_MS int = 10
+var TIME_DIVISIONS_MS int = 10
+
 func TaskHandler(w http.ResponseWriter, r *http.Request) {
 	request := new(Request)
 	defer r.Body.Close()
@@ -163,13 +180,72 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	for i := 0; i < len(expressions); i++ {
+		if expressions[i].task == request.Task {
+			for j := 0; j < len(expressions[i].task); j++ {
+				_, err := strconv.Atoi(string(expressions[i].task[j]))
+				if err != nil {
+					w.WriteHeader(http.StatusUnprocessableEntity)
+					break
+				}
+			}
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}
+	if len(expressions) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+	}
 
+	fmt.Fprintln(w, "{")
+	fmt.Fprintf(w, "    \"task\":\n")
+	fmt.Fprintf(w, "        {\n")
+	current_arg := 1
+	for i := 0; i < len(expressions); i++ {
+		if expressions[i].task == request.Task {
+			fmt.Fprintf(w, "            \"id\": %v\n", expressions[i].id)
+			for j := 0; j < len(expressions[i].task); j++ {
+				if expressions[i].task[j] == '+' {
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation_time\": %v\n", TIME_ADDITION_MS)
+				} else if expressions[i].task[j] == '-' {
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation_time\": %v\n", TIME_SUBTRACTION_MS)
+				} else if expressions[i].task[j] == '/' {
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation_time\": %v\n", TIME_DIVISIONS_MS)
+				} else if expressions[i].task[j] == '*' {
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation_time\": %v\n", TIME_MULTIPLICATIONS_MS)
+				} else if expressions[i].task[j] == '(' {
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation_time\": %v\n", 0)
+				} else if expressions[i].task[j] == ')' {
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation_time\": %v\n", 0)
+				} else {
+					number, err := strconv.Atoi(string(expressions[i].task[j]))
+					if err != nil {
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						break
+					} else {
+						fmt.Fprintf(w, "            \"arg%v\": %v\n", current_arg, number)
+						current_arg += 1
+					}
+				}
+			}
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}
+	fmt.Fprintf(w, "        }\n")
+	fmt.Fprintf(w, "}\n")
 }
 
 func (a *Application) RunServer() error {
 	http.HandleFunc("/api/v1/calculate", CalcHandler)
 	http.HandleFunc("/api/v1/expressions", ExpressionsHandler)
-	http.HandleFunc("/api/v1/expressions/:id", ExpressionHandler)
+	http.HandleFunc("/api/v1/expressions/:id", IDHandler)
 	http.HandleFunc("/internal/task", TaskHandler)
 	return http.ListenAndServe(":"+a.config.Addr, nil)
 }
