@@ -1,10 +1,10 @@
 # Calc
- Golang calculator
+# Golang calculator
 
 Данная программа - веб-калькулятор: пользователь отправляет арифметическое выражение по HTTP и получает в ответ его результат, в противном случае - ошибку.
 
 
-Запуск:
+## Запуск:
 Для запуска введите в терминал команду: go run ./cmd/main.go
 
 Адрес сервера: http://localhost:8080
@@ -14,118 +14,109 @@
     "expression": "выражение, которое вы хотите посчитать"
 }
 
-Ограничения:
-Калькулятор сломается, если начнутся действия с отрицатильными числами (2--2 или 2-3-(1-5)*2)
+## Ограничения:
+Калькулятор сломается, если выражение начинается с отрицательного числа
 
 
-Примеры использования:
+## Пример использования:
+Адрес: ```http://localhost:8080/api/v1/calculate```
 
-Пример 1:
 Запрос:
+```bash
 {
     "expression": "2+2"
 }
+```
 Ответ:
+```bash
 {
-    "result": 4.000000
+    "id": 1
 }
+```
 
-Пример 2:
-Запрос:
-{
-    "expression": "2-2"
-}
-Ответ:
-{
-    "result": 0.000000
-}
 
-Пример 3:
-Запрос:
-{
-    "expression": "2*2"
-}
-Ответ:
-{
-    "result": 4.000000
-}
+Адрес: ```http://localhost:8080/api/v1/calculate```
 
-Пример 4:
 Запрос:
+```bash
 {
-    "expression": "2/2"
+    "expression": "124-(253878*351753)/1251"
 }
+```
 Ответ:
+```bash
 {
-    "result": 1.000000
+    "id": 2
 }
+```
 
-Пример 5:
-Запрос:
-{
-    "expression": "2*2+2"
-}
-Ответ:
-{
-    "result": 6.000000
-}
 
-Пример 6:
-Запрос:
-{
-    "expression": "2*(2+2)"
-}
-Ответ:
-{
-    "result": 8.000000
-}
+Адрес: ```http://localhost:8080/api/v1/expressions```
 
-Пример 7:
 Запрос:
+```bash
 {
-    "expression": "2-"
+    "expressions": ""
 }
+```
 Ответ:
+```bash
 {
-    "error": "Invalid expression"
+    "expressions": [
+        {
+            "id": 1
+            "status": OK
+            "result": 4
+        },
+        {
+            "id": 2
+            "status": OK
+            "result": -7.138464669064748e+07
+        },
+    ]
 }
+```
 
-Пример 8:
-Запрос:
-{
-    "expression": "2+2+"
-}
-Ответ:
-{
-    "error": "Invalid expression"
-}
 
-Пример 9:
-Запрос:
-{
-    "expression": "2+2())"
-}
-Ответ:
-{
-    "error": "Invalid expression"
-}
+Адрес: ```http://localhost:8080/api/v1/expressions/:id```
 
-Пример 10:
 Запрос:
+```bash
 {
-    "expression": "22"
+    "id":  2
 }
+```
 Ответ:
+```bash
 {
-    "result": 22.000000
+    "expression":
+        {
+            "id": 1
+            "status": OK
+            "result": -7.138464669064748e+07
+        }
 }
+```
 
-Пример 11:
+
+Адрес: ```http://localhost:8080/internal/task```
+
 Запрос:
+```bash
 {
-    "expression": "2+2a"
+    "task": "2+2"
 }
+```
 Ответ:
+```bash
 {
-    "error": "Invalid expression"
+    "task":
+        {
+            "id": 1
+            "arg1": 2
+            "operation": "+"
+            "operation_time": 10
+            "arg2": 2
+        }
 }
+```
