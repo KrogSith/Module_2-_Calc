@@ -14,11 +14,10 @@ var id int = 0
 var expressions = make([]expression, 0, 1024)
 
 type expression struct {
-	id         int
-	status     string
-	result     float64
-	expression string
-	task       string
+	id     int
+	status string
+	result float64
+	task   string
 }
 
 type Config struct {
@@ -72,7 +71,28 @@ type Request struct {
 	Task       string `json:"task"`
 }
 
+var COMPUTING_POWER int = 3
+
+func Agent(req string) {
+	for i := 0; i < COMPUTING_POWER; i++ {
+		go Worker(req)
+	}
+}
+
+func Worker(req string) {
+	for {
+		ch := make(chan float64)
+		result, err := calculation.Calc(req)
+		if err != nil {
+			return
+		}
+		ch <- result
+	}
+}
+
 func CalcHandler(w http.ResponseWriter, r *http.Request) {
+	res := make(chan float64)
+	er := make(chan error)
 	request := new(Request)
 	defer r.Body.Close()
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -80,7 +100,22 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	result, err := calculation.Calc(request.Expression)
+	Agent(request.Expression)
+	//result, err := calculation.Calc(request.Expression)
+	for i := 0; i < COMPUTING_POWER; i++ {
+		go func() {
+			for {
+				result, err := calculation.Calc(request.Expression)
+				if err != nil {
+					w.WriteHeader(http.StatusUnprocessableEntity)
+				}
+				res <- result
+				er <- err
+			}
+		}()
+	}
+	result := <-res
+	err = <-er
 	if err != nil {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	} else {
@@ -88,12 +123,12 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Fprintln(w, "{")
 	if err != nil {
-		expr := expression{id: id, status: err.Error(), result: result, expression: request.Expression}
+		expr := expression{id: id, status: err.Error(), result: result, task: request.Expression}
 		expressions = append(expressions, expr)
 		fmt.Fprintf(w, "    \"error\": \"%s\"", err.Error())
 		id += 1
 	} else {
-		expr := expression{id: id, status: "OK", result: result}
+		expr := expression{id: id, status: "OK", result: result, task: request.Expression}
 		expressions = append(expressions, expr)
 		fmt.Fprintf(w, "    \"id\": %v", id)
 		id += 1
@@ -154,14 +189,12 @@ func IDHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "            \"id\": %v\n", request.ID)
 			fmt.Fprintf(w, "            \"status\": \"Expression not found\"\n")
 			fmt.Fprintf(w, "            \"result\": \"Result not found\"\n")
-			w.WriteHeader(http.StatusNotFound)
 		}
 	}
 	if len(expressions) == 0 {
 		fmt.Fprintf(w, "            \"id\": %v\n", request.ID)
 		fmt.Fprintf(w, "            \"status\": \"Expression not found\"\n")
 		fmt.Fprintf(w, "            \"result\": \"Result not found\"\n")
-		w.WriteHeader(http.StatusNotFound)
 	}
 	fmt.Fprintf(w, "        }\n")
 	fmt.Fprintln(w, "}")
@@ -183,10 +216,12 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < len(expressions); i++ {
 		if expressions[i].task == request.Task {
 			for j := 0; j < len(expressions[i].task); j++ {
-				_, err := strconv.Atoi(string(expressions[i].task[j]))
-				if err != nil {
-					w.WriteHeader(http.StatusUnprocessableEntity)
-					break
+				if expressions[i].task[j] != '+' && expressions[i].task[j] != '-' && expressions[i].task[j] != '/' && expressions[i].task[j] != '*' && expressions[i].task[j] != '(' && expressions[i].task[j] != ')' {
+					_, err := strconv.Atoi(string(expressions[i].task[j]))
+					if err != nil {
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						break
+					}
 				}
 			}
 		} else {
@@ -206,16 +241,16 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "            \"id\": %v\n", expressions[i].id)
 			for j := 0; j < len(expressions[i].task); j++ {
 				if expressions[i].task[j] == '+' {
-					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", "+")
 					fmt.Fprintf(w, "            \"operation_time\": %v\n", TIME_ADDITION_MS)
 				} else if expressions[i].task[j] == '-' {
-					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", "-")
 					fmt.Fprintf(w, "            \"operation_time\": %v\n", TIME_SUBTRACTION_MS)
 				} else if expressions[i].task[j] == '/' {
-					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", "/")
 					fmt.Fprintf(w, "            \"operation_time\": %v\n", TIME_DIVISIONS_MS)
 				} else if expressions[i].task[j] == '*' {
-					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", "*")
 					fmt.Fprintf(w, "            \"operation_time\": %v\n", TIME_MULTIPLICATIONS_MS)
 				} else if expressions[i].task[j] == '(' {
 					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
@@ -226,7 +261,6 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 				} else {
 					number, err := strconv.Atoi(string(expressions[i].task[j]))
 					if err != nil {
-						w.WriteHeader(http.StatusUnprocessableEntity)
 						break
 					} else {
 						fmt.Fprintf(w, "            \"arg%v\": %v\n", current_arg, number)
@@ -234,8 +268,6 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-		} else {
-			w.WriteHeader(http.StatusNotFound)
 		}
 	}
 	fmt.Fprintf(w, "        }\n")
