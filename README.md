@@ -20,6 +20,68 @@
 
 ## Пример использования:
 Адрес: ```http://localhost:8080/api/v1/calculate```
+
+Запрос:
+```bash
+{
+    "expression": "2+2"
+}
+```
+Ответ:
+```bash
+{
+    "result": 4.000000
+}
+```
+
+
+Адрес: ```http://localhost:8080/api/v1/calculate```
+
+Запрос:
+```bash
+{
+    "expression": "2+2"
+}
+```
+Ответ:
+```bash
+{
+    "result": 4.000000
+}
+```
+
+
+Адрес: ```http://localhost:8080/api/v1/calculate```
+Запрос:
+```bash
+{
+    "expression": "2+2"
+}
+```
+Ответ:
+```bash
+{
+    "result": 4.000000
+}
+```
+
+
+Адрес: ```http://localhost:8080/api/v1/calculate```
+Запрос:
+```bash
+{
+    "expression": "2+2"
+}
+```
+Ответ:
+```bash
+{
+    "result": 4.000000
+}
+```
+
+
+Адрес: ```http://localhost:8080/api/v1/calculate```
 Запрос:
 ```bash
 {
