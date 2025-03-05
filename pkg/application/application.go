@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-var id int = 0
+var id int = 1
 var expressions = make([]expression, 0, 1024)
 
 type expression struct {
@@ -167,9 +167,10 @@ func IDHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for i := 0; i < len(expressions); i++ {
-		if i == len(expressions)-1 && request.ID != expressions[i].id {
-			w.WriteHeader(http.StatusNotFound)
+		if request.ID == expressions[i].id {
 			break
+		} else if i == len(expressions)-1 {
+			w.WriteHeader(http.StatusNotFound)
 		}
 	}
 	if len(expressions) == 0 {
@@ -224,7 +225,7 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-		} else {
+		} else if len(expressions) == i {
 			w.WriteHeader(http.StatusNotFound)
 		}
 	}
@@ -253,10 +254,10 @@ func TaskHandler(w http.ResponseWriter, r *http.Request) {
 					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", "*")
 					fmt.Fprintf(w, "            \"operation_time\": %v\n", TIME_MULTIPLICATIONS_MS)
 				} else if expressions[i].task[j] == '(' {
-					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", "(")
 					fmt.Fprintf(w, "            \"operation_time\": %v\n", 0)
 				} else if expressions[i].task[j] == ')' {
-					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", expressions[i].task[j])
+					fmt.Fprintf(w, "            \"operation\": \"%v\"\n", ")")
 					fmt.Fprintf(w, "            \"operation_time\": %v\n", 0)
 				} else {
 					number, err := strconv.Atoi(string(expressions[i].task[j]))
