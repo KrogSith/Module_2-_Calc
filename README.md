@@ -30,7 +30,7 @@
 Ответ:
 ```bash
 {
-    "result": 4.000000
+    "id": 1
 }
 ```
 
@@ -40,57 +40,83 @@
 Запрос:
 ```bash
 {
-    "expression": "2+2"
+    "expression": "124-(253878*351753)/1251"
 }
 ```
 Ответ:
 ```bash
 {
-    "result": 4.000000
+    "id": 2
 }
 ```
 
 
-Адрес: ```http://localhost:8080/api/v1/calculate```
+Адрес: ```http://localhost:8080/api/v1/expressions```
+
 Запрос:
 ```bash
 {
-    "expression": "2+2"
+    "expressions": ""
 }
 ```
 Ответ:
 ```bash
 {
-    "result": 4.000000
+    "expressions": [
+        {
+            "id": 1
+            "status": OK
+            "result": 4
+        },
+        {
+            "id": 2
+            "status": OK
+            "result": -7.138464669064748e+07
+        },
+    ]
 }
 ```
 
 
-Адрес: ```http://localhost:8080/api/v1/calculate```
+Адрес: ```http://localhost:8080/api/v1/expressions/:id```
+
 Запрос:
 ```bash
 {
-    "expression": "2+2"
+    "id":  2
 }
 ```
 Ответ:
 ```bash
 {
-    "result": 4.000000
+    "expression":
+        {
+            "id": 1
+            "status": OK
+            "result": -7.138464669064748e+07
+        }
 }
 ```
 
 
-Адрес: ```http://localhost:8080/api/v1/calculate```
+Адрес: ```http://localhost:8080/internal/task```
+
 Запрос:
 ```bash
 {
-    "expression": "2+2"
+    "task": "2+2"
 }
 ```
 Ответ:
 ```bash
 {
-    "result": 4.000000
+    "task":
+        {
+            "id": 1
+            "arg1": 2
+            "operation": "+"
+            "operation_time": 10
+            "arg2": 2
+        }
 }
 ```
